@@ -3,6 +3,8 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.google.gms.google.services)
+    id("kotlin-kapt") // Kapt jest wymagany do przetwarzania adnotacji Hilt
+    id("dagger.hilt.android.plugin") // Hilt plugin
 }
 
 android {
@@ -41,6 +43,11 @@ android {
 }
 
 dependencies {
+    implementation("com.google.dagger:hilt-android:2.45")
+    kapt("com.google.dagger:hilt-android-compiler:2.45")
+    implementation("androidx.hilt:hilt-lifecycle-viewmodel:1.0.0")
+    kapt("androidx.hilt:hilt-compiler:1.0.0")
+
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -53,6 +60,7 @@ dependencies {
     implementation(libs.firebase.database)
     implementation(libs.firebase.firestore)
     implementation(libs.androidx.room.common)
+    implementation(libs.androidx.espresso.core)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
