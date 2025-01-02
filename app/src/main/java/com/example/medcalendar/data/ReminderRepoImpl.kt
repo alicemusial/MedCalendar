@@ -5,19 +5,42 @@ import com.example.medcalendar.domain.repository.ReminderRepository
 
 class ReminderRepoImpl(private val reminderFirebase: ReminderFirebase) : ReminderRepository {
     override suspend fun insert(reminder: Reminder) {
-        TODO("Not yet implemented")
+        reminderFirebase.addReminder(reminder) {
+            success -> if (!success) {
+                throw Exception("Failed to add reminder")
+        }
+        }
     }
 
     override suspend fun update(reminder: Reminder) {
-        TODO("Not yet implemented")
+        reminderFirebase.updateReminder(reminder){
+            success -> if (!success) {
+                throw Exception("Failed to update reminder")
+            }
+        }
     }
 
     override suspend fun delete(reminder: Reminder) {
-        TODO("Not yet implemented")
+        reminderFirebase.updateReminder(reminder){
+            success -> if (!success) {
+                throw Exception("Failed to delete reminder")
+            }
+        }
     }
 
     override suspend fun getAllReminders(): List<Reminder> {
-        TODO("Not yet implemented")
-    }
+        var resultList: List<Reminder>? = null
+        var successFlag = false
 
+        reminderFirebase.getAllReminders { reminders ->
+            resultList = reminders
+            successFlag = true
+        }
+
+        if (!successFlag || resultList == null) {
+            throw Exception("Failed to fetch reminders from Firebase.")
+        }
+
+        return resultList!!
+    }
 }
