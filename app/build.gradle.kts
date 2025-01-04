@@ -48,6 +48,13 @@ dependencies {
     implementation("androidx.hilt:hilt-lifecycle-viewmodel:1.0.0")
     kapt("androidx.hilt:hilt-compiler:1.0.0")
 
+    implementation ("com.google.code.gson:gson:2.10.1") // Najnowsza wersja Gson
+
+    //Material
+    implementation ("com.google.android.material:material:1.9.0") // Najnowsza wersja
+    implementation ("androidx.compose.material:material-icons-extended:1.5.1") // Dla ikon
+    implementation ("androidx.compose.material3:material3:1.2.0-alpha02")      // Material 3
+
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
