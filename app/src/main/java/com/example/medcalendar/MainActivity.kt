@@ -18,6 +18,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.BottomSheetScaffold
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -40,7 +42,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.example.medcalendar.presentation.cancelAlarm
 import kotlinx.coroutines.launch
 import java.text.Normalizer
 
@@ -63,6 +67,7 @@ fun MainScreen(viewModel: MainViewModel) {
     val uiState by viewModel.uiState.collectAsState()
     val sheetState = rememberBottomSheetScaffoldState()
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     BottomSheetScaffold (
         scaffoldState = sheetState,
@@ -100,6 +105,22 @@ fun MainScreen(viewModel: MainViewModel) {
                                     Text(text = it.dosage)
                                     Spacer(modifier = Modifier.height(8.dp))
                                     Text(text = it.time.toString())
+                                }
+
+                                if(it.isRepeating){
+                                    IconButton(onClick = {
+                                        cancelAlarm(context, it)
+                                        viewModel.update(it.copy(isTaken = true, isRepeating = false))
+                                    }
+                                        ) {
+                                        Icon(imageVector = Icons.Default.Schedule, contentDescription = null)
+                                    }
+                                }
+
+                                IconButton(onClick = {
+                                    cancelAlarm(context, it)
+                                    viewModel.delete(it) }) {
+                                    Icon(imageVector = Icons.Default.Delete, contentDescription = null)
                                 }
                             }
                         }
