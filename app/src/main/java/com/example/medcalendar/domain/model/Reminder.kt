@@ -1,7 +1,6 @@
 package com.example.medcalendar.domain.model
 
 data class Reminder(
-    var id: String,
     var name: String,
     var dosage: String,
     var time: Long,

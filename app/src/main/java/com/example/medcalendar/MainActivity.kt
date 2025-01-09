@@ -30,6 +30,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TimePicker
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -37,6 +38,7 @@ import androidx.compose.runtime.getValue
 import com.example.medcalendar.presentation.MainViewModel
 import com.example.medcalendar.ui.theme.MedCalendarTheme
 import androidx.compose.material3.rememberBottomSheetScaffoldState
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -44,9 +46,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import com.example.medcalendar.domain.model.Reminder
 import com.example.medcalendar.presentation.cancelAlarm
+import com.example.medcalendar.presentation.setUpAlarm
+import com.example.medcalendar.presentation.setUpPeriodicAlarm
 import kotlinx.coroutines.launch
 import java.text.Normalizer
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -68,11 +77,29 @@ fun MainScreen(viewModel: MainViewModel) {
     val sheetState = rememberBottomSheetScaffoldState()
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    val isTimePickerOpen = remember { mutableStateOf(false) }
+    val timePickerState = rememberTimePickerState()
+    val format = remember{ SimpleDateFormat("hh:mm a", Locale.getDefault()) }
+    val timeInMillis = remember { mutableStateOf(0L) }
 
     BottomSheetScaffold (
         scaffoldState = sheetState,
         sheetContent = {
-            Form(time = "", onTimeClick = {/*TODO*/}) { name, dosage, isTaken -> }
+            Form(time = "", onTimeClick = {/*TODO*/}) { name, dosage, isTaken ->
+                val reminder = Reminder(
+                    name,
+                    dosage,
+                    timeInMillis.value,
+                    isTaken = false,
+                    isRepeating = isTaken
+                )
+                viewModel.insert(reminder)
+                if(isTaken){
+                    setUpPeriodicAlarm(context, reminder)
+                }else {
+                    setUpAlarm(context, reminder)
+                }
+            }
         }){
         Scaffold(
             topBar = {TopAppBar(
@@ -84,6 +111,29 @@ fun MainScreen(viewModel: MainViewModel) {
                     Icon(imageVector = Icons.Default.Add, contentDescription = null)
                 }
             })}) {
+            if(isTimePickerOpen.value){
+                Dialog(onDismissRequest = { isTimePickerOpen.value = false }) {
+                    Column {
+                        TimePicker(state = timePickerState)
+                        Row {
+                            Button(onClick = {
+                                isTimePickerOpen.value = false
+                            }) {
+                                Text(text = "Cancel")
+                            }
+                            Button(onClick = {
+                                val calendar = Calendar.getInstance().apply(){
+                                    set(Calendar.HOUR_OF_DAY, timePickerState.hour)
+                                    set(Calendar.MINUTE, timePickerState.minute)
+                                }
+                                timeInMillis.value = calendar.timeInMillis
+                            }) {
+                                Text(text = "Confirm")
+                            }
+                        }
+                    }
+                }
+            }
             if (uiState.data.isEmpty()) {
                 Box(
                     modifier = Modifier
