@@ -44,6 +44,7 @@ android {
 
 dependencies {
     implementation("com.google.dagger:hilt-android:2.45")
+    implementation(libs.androidx.ui.text.google.fonts)
     kapt("com.google.dagger:hilt-android-compiler:2.45")
     implementation("androidx.hilt:hilt-lifecycle-viewmodel:1.0.0")
     kapt("androidx.hilt:hilt-compiler:1.0.0")
