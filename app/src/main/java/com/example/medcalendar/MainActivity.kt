@@ -28,6 +28,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TimePicker
@@ -51,19 +52,25 @@ import com.example.medcalendar.domain.model.Reminder
 import com.example.medcalendar.presentation.cancelAlarm
 import com.example.medcalendar.presentation.setUpAlarm
 import com.example.medcalendar.presentation.setUpPeriodicAlarm
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
-import java.text.Normalizer
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
+import androidx.hilt.navigation.compose.hiltViewModel
 
+
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             MedCalendarTheme {
-
+                    Surface(modifier = Modifier.fillMaxSize()){
+                        val viewModel = hiltViewModel<MainViewModel>()
+                        MainScreen(viewModel)
+                    }
                 }
             }
         }
@@ -85,7 +92,10 @@ fun MainScreen(viewModel: MainViewModel) {
     BottomSheetScaffold (
         scaffoldState = sheetState,
         sheetContent = {
-            Form(time = "", onTimeClick = {/*TODO*/}) { name, dosage, isTaken ->
+            Form(time = format.format(timeInMillis.value),
+                onTimeClick = {
+                    isTimePickerOpen.value = true
+                }) { name, dosage, isTaken ->
                 val reminder = Reminder(
                     name,
                     dosage,
@@ -98,6 +108,9 @@ fun MainScreen(viewModel: MainViewModel) {
                     setUpPeriodicAlarm(context, reminder)
                 }else {
                     setUpAlarm(context, reminder)
+                }
+                scope.launch {
+                    sheetState.bottomSheetState.hide()
                 }
             }
         }){
@@ -127,6 +140,7 @@ fun MainScreen(viewModel: MainViewModel) {
                                     set(Calendar.MINUTE, timePickerState.minute)
                                 }
                                 timeInMillis.value = calendar.timeInMillis
+                                isTimePickerOpen.value = false
                             }) {
                                 Text(text = "Confirm")
                             }
@@ -154,7 +168,7 @@ fun MainScreen(viewModel: MainViewModel) {
                                     Spacer(modifier = Modifier.height(8.dp))
                                     Text(text = it.dosage)
                                     Spacer(modifier = Modifier.height(8.dp))
-                                    Text(text = it.time.toString())
+                                    Text(text = format.format(it.time))
                                 }
 
                                 if(it.isRepeating){
@@ -199,7 +213,8 @@ fun Form(time : String, onTimeClick : () -> Unit, onClick : (String, String, Boo
         OutlinedTextField(
             value = name.value,
             onValueChange = {name.value = it},
-            modifier = Modifier.fillMaxWidth())
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true)
 
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -216,7 +231,8 @@ fun Form(time : String, onTimeClick : () -> Unit, onClick : (String, String, Boo
             modifier = Modifier
                 .clickable {}
                 .fillMaxWidth(),
-            enabled = false)
+            enabled = false,
+            singleLine = true)
 
         Spacer(modifier = Modifier.height(8.dp))
 

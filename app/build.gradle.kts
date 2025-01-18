@@ -43,11 +43,11 @@ android {
 }
 
 dependencies {
-    implementation("com.google.dagger:hilt-android:2.45")
+    implementation("com.google.dagger:hilt-android:2.47")
     implementation(libs.androidx.ui.text.google.fonts)
-    kapt("com.google.dagger:hilt-android-compiler:2.45")
-    implementation("androidx.hilt:hilt-lifecycle-viewmodel:1.0.0")
+    kapt("com.google.dagger:hilt-android-compiler:2.47")
     kapt("androidx.hilt:hilt-compiler:1.0.0")
+    implementation ("androidx.hilt:hilt-navigation-compose:1.0.0")
 
     implementation ("com.google.code.gson:gson:2.10.1") // Najnowsza wersja Gson
 
