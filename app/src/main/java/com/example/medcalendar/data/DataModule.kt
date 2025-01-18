@@ -1,6 +1,6 @@
 package com.example.medcalendar.data
 
-import androidx.test.espresso.core.internal.deps.dagger.Module
+import dagger.Module
 import androidx.test.espresso.core.internal.deps.dagger.Provides
 import com.example.medcalendar.domain.repository.ReminderRepository
 import dagger.hilt.InstallIn
