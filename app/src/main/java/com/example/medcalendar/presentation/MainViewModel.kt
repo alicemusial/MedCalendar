@@ -1,5 +1,6 @@
 package com.example.medcalendar.presentation
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -32,7 +33,9 @@ class MainViewModel @Inject constructor(
 
     fun getReminders() {
         _reminders.value = UiState.Loading
+        Log.d("MainViewModel", "getReminders() called")
         repository.getAllReminders {
+            Log.d("MainViewModel", "getReminders() result: $it")
             _reminders.value = it
 
         }
@@ -42,6 +45,9 @@ class MainViewModel @Inject constructor(
         _addReminder.value = UiState.Loading
         repository.insert(reminder) {
             _addReminder.value = it
+            if (it is UiState.Success) {
+                getReminders()
+            }
         }
     }
 
@@ -58,13 +64,13 @@ class MainViewModel @Inject constructor(
         _deleteReminder.value = UiState.Loading
         repository.delete(reminder) {
             _deleteReminder.value = it
+            getReminders()
         }
 
     }
 }
 
 sealed class UiState<out T> {
-    // val data: List<Reminder> = emptyList()
     object Loading : UiState<Nothing>()
     data class Success<out T>(val data: T) : UiState<T>()
     data class Failure(val error: String?) : UiState<Nothing>()
