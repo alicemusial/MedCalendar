@@ -5,5 +5,6 @@ data class Reminder(
     var dosage: String,
     var time: Long,
     var isTaken: Boolean = false,
-    var isRepeating: Boolean = false
+    var isRepeating: Boolean = false,
+    var id: String = ""
 )

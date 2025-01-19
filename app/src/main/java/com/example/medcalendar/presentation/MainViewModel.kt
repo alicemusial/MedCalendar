@@ -1,58 +1,71 @@
 package com.example.medcalendar.presentation
 
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
+import com.example.medcalendar.data.repository.ReminderRepository
 import com.example.medcalendar.domain.model.Reminder
-import com.example.medcalendar.domain.usecases.DeleteUseCase
-import com.example.medcalendar.domain.usecases.GetAllRemindersUseCase
-import com.example.medcalendar.domain.usecases.InsertUseCase
-import com.example.medcalendar.domain.usecases.UpdateUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
-    private val insertUseCase: InsertUseCase,
-    private val updateUseCase: UpdateUseCase,
-    private val deleteUseCase: DeleteUseCase,
-    private val getAllRemindersUseCase: GetAllRemindersUseCase
+    val repository: ReminderRepository,
 ) : ViewModel() {
 
-    // stan interfejsu użytkownika
-    private val _uiState = MutableStateFlow(UiState())
-    val uiState: StateFlow<UiState> get() = _uiState
 
-    init {
-        fetchReminders()
-    }
+    private val _reminders = MutableLiveData<UiState<List<Reminder>>>()
+    val reminder: LiveData<UiState<List<Reminder>>>
+        get() = _reminders
 
-    private fun fetchReminders() {
-        viewModelScope.launch {
-            try {
-                val reminders = getAllRemindersUseCase.invoke() // wywołanie zawieszalnej funkcji
-                _uiState.value = UiState(reminders)
-            } catch (e: Exception) {
-                _uiState.value = UiState(emptyList())
-            }
+    private val _addReminder = MutableLiveData<UiState<String>>()
+    val addReminder: LiveData<UiState<String>>
+        get() = _addReminder
+
+    private val _updateReminder = MutableLiveData<UiState<String>>()
+    val updateReminder: LiveData<UiState<String>>
+        get() = _updateReminder
+
+    private val _deleteReminder = MutableLiveData<UiState<String>>()
+    val deleteReminder: LiveData<UiState<String>>
+        get() = _deleteReminder
+
+    fun getReminders() {
+        _reminders.value = UiState.Loading
+        repository.getAllReminders {
+            _reminders.value = it
+
         }
     }
 
-    fun insert(reminder: Reminder) = viewModelScope.launch {
-        insertUseCase.invoke(reminder)
+    fun insert(reminder: Reminder) {
+        _addReminder.value = UiState.Loading
+        repository.insert(reminder) {
+            _addReminder.value = it
+        }
     }
 
-    fun update(reminder: Reminder) = viewModelScope.launch {
-        updateUseCase.invoke(reminder)
-    }
 
-    fun delete(reminder: Reminder) = viewModelScope.launch {
-        deleteUseCase.invoke(reminder)
+
+    fun update(reminder: Reminder) {
+        _updateReminder.value = UiState.Loading
+        repository.update(reminder) {
+            _updateReminder.value = it
+        }
+        }
+
+    fun delete(reminder: Reminder) {
+        _deleteReminder.value = UiState.Loading
+        repository.delete(reminder) {
+            _deleteReminder.value = it
+        }
+
     }
 }
 
-data class UiState(
-    val data: List<Reminder> = emptyList()
-)
+sealed class UiState<out T> {
+    // val data: List<Reminder> = emptyList()
+    object Loading : UiState<Nothing>()
+    data class Success<out T>(val data: T) : UiState<T>()
+    data class Failure(val error: String?) : UiState<Nothing>()
+}

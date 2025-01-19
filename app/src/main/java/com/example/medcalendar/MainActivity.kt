@@ -40,6 +40,7 @@ import com.example.medcalendar.presentation.MainViewModel
 import com.example.medcalendar.ui.theme.MedCalendarTheme
 import androidx.compose.material3.rememberBottomSheetScaffoldState
 import androidx.compose.material3.rememberTimePickerState
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -58,6 +59,8 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.medcalendar.presentation.UiState
+import java.lang.String.format
 
 
 @AndroidEntryPoint
@@ -80,7 +83,7 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(viewModel: MainViewModel) {
-    val uiState by viewModel.uiState.collectAsState()
+    val reminderState by viewModel.reminder.observeAsState()
     val sheetState = rememberBottomSheetScaffoldState()
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -113,18 +116,20 @@ fun MainScreen(viewModel: MainViewModel) {
                     sheetState.bottomSheetState.hide()
                 }
             }
-        }){
+        }
+    ){
         Scaffold(
-            topBar = {TopAppBar(
-                title = {Text(text = "MedCalendar")},
-                actions = {
-                IconButton(onClick = {
-                   scope.launch { sheetState.bottomSheetState.expand() }
+            topBar = {
+                TopAppBar(
+                    title = {Text(text = "MedCalendar")},
+                    actions = {
+                    IconButton(onClick = {
+                       scope.launch { sheetState.bottomSheetState.expand() }
                 }){
                     Icon(imageVector = Icons.Default.Add, contentDescription = null)
                 }
-            })}) {
-            if(isTimePickerOpen.value){
+            })})
+        { if(isTimePickerOpen.value){
                 Dialog(onDismissRequest = { isTimePickerOpen.value = false }) {
                     Column {
                         TimePicker(state = timePickerState)
@@ -148,53 +153,95 @@ fun MainScreen(viewModel: MainViewModel) {
                     }
                 }
             }
-            if (uiState.data.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .padding(it)
-                        .fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(text = "No data")
+
+            when (val state = reminderState){
+                is UiState.Loading -> {
+                    Box(
+                        modifier = Modifier
+                            .padding(it)
+                            .fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(text = "Loading")
+                    }
                 }
-            } else {
-                LazyColumn(modifier = Modifier.padding(it).fillMaxSize()){
-                    items(uiState.data){
-                        Card(modifier = Modifier.padding(8.dp)) {
-                            Row(modifier = Modifier.padding(8.dp),
-                                verticalAlignment = Alignment.CenterVertically) {
-                                Column (modifier = Modifier.weight(1f)){
-                                    Text(text = it.name)
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    Text(text = it.dosage)
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    Text(text = format.format(it.time))
-                                }
 
-                                if(it.isRepeating){
-                                    IconButton(onClick = {
-                                        cancelAlarm(context, it)
-                                        viewModel.update(it.copy(isTaken = true, isRepeating = false))
-                                    }
-                                        ) {
-                                        Icon(imageVector = Icons.Default.Schedule, contentDescription = null)
-                                    }
-                                }
+                is UiState.Success -> {
+                    LazyColumn(modifier = Modifier.padding(it).fillMaxSize()){
+                        items(state.data){ reminder ->
+                            ReminderCard(
+                                reminder,
+                                onDelete = {viewModel.delete(reminder)},
+                                onUpdate = {
+                                    val updatedReminder = reminder.copy(name = reminder.name, dosage = reminder.dosage)
+                                    viewModel.update(updatedReminder)
+                                    if(updatedReminder.isRepeating){
+                                        cancelAlarm(context, reminder)
+                                        setUpPeriodicAlarm(context, updatedReminder)
 
-                                IconButton(onClick = {
-                                    cancelAlarm(context, it)
-                                    viewModel.delete(it) }) {
-                                    Icon(imageVector = Icons.Default.Delete, contentDescription = null)
-                                }
-                            }
+                                    }
+                                })
                         }
                     }
                 }
+
+                is UiState.Failure -> {
+                    Box(
+                        modifier = Modifier
+                            .padding(it)
+                            .fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(text = "Error: ${state.error}")
+                    }
+                }
+                null -> {
+                    Box(
+                        modifier = Modifier
+                            .padding(it)
+                            .fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(text = "No data")
+                    }
+                }
             }
+
         }
 
     }
 }
+
+@Composable
+fun ReminderCard(
+    reminder: Reminder,
+    onDelete: () -> Unit,
+    onUpdate: () -> Unit) {
+    Card(modifier = Modifier.padding(8.dp)){
+        Row(
+            modifier = Modifier.padding(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ){
+            Column(modifier = Modifier.weight(1f)) {
+                Text(text = reminder.name)
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(text = reminder.dosage)
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(text = format(reminder.time.toString()))
+            }
+            if(reminder.isRepeating){
+                IconButton(onClick = onUpdate) {
+                    Icon(imageVector = Icons.Default.Schedule, contentDescription = null)
+                }
+            }
+
+            IconButton(onClick = onDelete) {
+                Icon(imageVector = Icons.Default.Delete, contentDescription = null)
+            }
+        }
+    }
+}
+
 
 @Composable
 fun Form(time : String, onTimeClick : () -> Unit, onClick : (String, String, Boolean) -> Unit){
