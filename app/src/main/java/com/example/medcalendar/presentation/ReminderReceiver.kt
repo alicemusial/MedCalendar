@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
+import android.provider.Settings
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -82,9 +83,12 @@ class ReminderReceiver : BroadcastReceiver(){
                             .setContentText(reminder.name.plus("${reminder.dosage}"))
                             .addAction(R.drawable.check_box, "Done", donePendingIntent)
                             .addAction(R.drawable.close, "Reject", rejectPendingIntent)
+                            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                             .build()
 
                         NotificationManagerCompat.from(context).notify(reminder.time.toInt(), notification)
+                    }else{
+                        requestNotificationPermission(context)
                     }
                 } else {
                     Log.d("ReminderReceiver", "Received reminder: $reminder")
@@ -94,6 +98,7 @@ class ReminderReceiver : BroadcastReceiver(){
                         .setContentText(reminder.name.plus("${reminder.dosage}"))
                         .addAction(R.drawable.check_box, "Done", donePendingIntent)
                         .addAction(R.drawable.close, "Reject", rejectPendingIntent)
+                        .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                         .build()
 
                     NotificationManagerCompat.from(context).notify(reminder.time.toInt(), notification)
@@ -103,5 +108,13 @@ class ReminderReceiver : BroadcastReceiver(){
         }
 
 
+    }
+}
+
+fun requestNotificationPermission(context: Context) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        val permissionIntent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+        permissionIntent.putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+        context.startActivity(permissionIntent)
     }
 }

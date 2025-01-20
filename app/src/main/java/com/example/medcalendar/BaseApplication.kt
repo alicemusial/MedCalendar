@@ -18,6 +18,7 @@ class BaseApplication : Application() {
             val notificationChannel = NotificationChannel(CHANNEL, NAME, NotificationManager.IMPORTANCE_DEFAULT)
             val notificationManager = this.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.createNotificationChannel(notificationChannel)
+
         }
     }
 
