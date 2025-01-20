@@ -5,6 +5,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.os.Build
+import android.util.Log
 import dagger.hilt.android.HiltAndroidApp
 
 const val CHANNEL = "channel"
@@ -18,6 +19,7 @@ class BaseApplication : Application() {
             val notificationChannel = NotificationChannel(CHANNEL, NAME, NotificationManager.IMPORTANCE_DEFAULT)
             val notificationManager = this.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.createNotificationChannel(notificationChannel)
+            Log.d("BaseApplication", "Notification channel created")
 
         }
     }

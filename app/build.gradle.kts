@@ -1,3 +1,5 @@
+
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -48,11 +50,12 @@ dependencies {
     implementation(libs.androidx.ui.text.google.fonts)
     implementation(libs.androidx.runtime.livedata)
     implementation(libs.firebase.auth)
+    implementation(libs.firebase.inappmessaging.display)
     kapt("com.google.dagger:hilt-android-compiler:2.51.1")
     implementation ("androidx.hilt:hilt-navigation-compose:1.0.0")
 
     implementation ("com.google.code.gson:gson:2.10.1") // Najnowsza wersja Gson
-    implementation ("com.google.android.gms:play-services-auth:20.0.0")
+
 
     //Material
     implementation ("com.google.android.material:material:1.9.0") // Najnowsza wersja

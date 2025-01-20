@@ -46,7 +46,7 @@ class ReminderReceiver : BroadcastReceiver(){
             context,
             reminder.time.toInt(),
             doneIntent,
-            PendingIntent.FLAG_IMMUTABLE
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
         val rejectIntent = Intent(context, ReminderReceiver::class.java).apply{
@@ -58,7 +58,7 @@ class ReminderReceiver : BroadcastReceiver(){
             context,
             reminder.time.toInt(),
             rejectIntent,
-            PendingIntent.FLAG_IMMUTABLE
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
         when(intent.action){
@@ -73,7 +73,7 @@ class ReminderReceiver : BroadcastReceiver(){
                 Log.d("ReminderReceiver", "Received reminder: $reminder")
             }
             else -> {
-                if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU){
+                if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.S){
                     if(ContextCompat.checkSelfPermission(context, POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED){
 
 

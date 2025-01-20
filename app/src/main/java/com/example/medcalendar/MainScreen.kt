@@ -1,6 +1,8 @@
 package com.example.medcalendar
 
+import android.os.Build
 import android.util.Log
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -14,6 +16,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Close
@@ -23,6 +27,7 @@ import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -45,6 +50,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -58,6 +65,7 @@ import java.util.Calendar
 import java.util.Locale
 import com.example.medcalendar.presentation.UiState
 
+@RequiresApi(Build.VERSION_CODES.S)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(navController: NavController, authViewModel: MainViewModel) {
@@ -120,7 +128,10 @@ fun MainScreen(navController: NavController, authViewModel: MainViewModel) {
                         Column(
                             modifier = Modifier
                                 .padding(16.dp)
-                                .background(color = MaterialTheme.colorScheme.surface, shape = MaterialTheme.shapes.medium)
+                                .background(
+                                    color = MaterialTheme.colorScheme.surface,
+                                    shape = MaterialTheme.shapes.medium
+                                )
                         ) {
                             Spacer(modifier = Modifier.height(12.dp))
                             Row{
@@ -161,7 +172,10 @@ fun MainScreen(navController: NavController, authViewModel: MainViewModel) {
                         Column(
                             modifier = Modifier
                                 .padding(16.dp)
-                                .background(color = MaterialTheme.colorScheme.surface, shape = MaterialTheme.shapes.medium)
+                                .background(
+                                    color = MaterialTheme.colorScheme.surface,
+                                    shape = MaterialTheme.shapes.medium
+                                )
                         ) { Spacer(modifier = Modifier.height(12.dp))
                             Row{
                                 Text(text = "Update Reminder",style = MaterialTheme.typography.titleLarge)
@@ -206,11 +220,14 @@ fun MainScreen(navController: NavController, authViewModel: MainViewModel) {
                     Column (
                         Modifier.background(color = MaterialTheme.colorScheme.surface, shape = MaterialTheme.shapes.medium)
                     ){
+                        Spacer(modifier = Modifier.height(12.dp))
                         TimePicker(state = timePickerState)
                         Row {
+                            Spacer(modifier = Modifier.weight(1f))
                             Button(onClick = { isTimePickerOpen.value = false }) {
                                 Text(text = "Cancel")
                             }
+                            Spacer(modifier = Modifier.width(12.dp))
                             Button(onClick = {
                                 val calendar = Calendar.getInstance().apply {
                                     set(Calendar.HOUR_OF_DAY, timePickerState.hour)
@@ -221,7 +238,10 @@ fun MainScreen(navController: NavController, authViewModel: MainViewModel) {
                             }) {
                                 Text(text = "Confirm")
                             }
+                            Spacer(modifier = Modifier.weight(1f))
                         }
+                        Spacer(modifier = Modifier.height(12.dp))
+
                     }
                 }
             }
@@ -239,7 +259,9 @@ fun MainScreen(navController: NavController, authViewModel: MainViewModel) {
                             Text(text = "Add your medicine reminders!")
                         }
                     } else {
-                        LazyColumn(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+                        LazyColumn(modifier = Modifier
+                            .fillMaxSize()
+                            .padding(paddingValues)) {
                             items(state.data) { reminder ->
                                 ReminderCard(
                                     reminder,
@@ -247,9 +269,10 @@ fun MainScreen(navController: NavController, authViewModel: MainViewModel) {
                                     onUpdate = {
                                         isUpdateDialogOpen.value = true
                                         selectedReminder.value = reminder
-                                        timeInMillis.value = reminder.time
+                                        timeInMillis.value = reminder.time},
+                                    onIsTakenChange = { updatedReminder ->
+                                        authViewModel.update(updatedReminder)
                                     }
-
                                 )
                             }
                         }}}
@@ -276,7 +299,8 @@ fun MainScreen(navController: NavController, authViewModel: MainViewModel) {
 fun ReminderCard(
     reminder: Reminder,
     onDelete: () -> Unit,
-    onUpdate: () -> Unit) {
+    onUpdate: () -> Unit,
+    onIsTakenChange: (Reminder) -> Unit) {
     val formattedTime = remember {
         SimpleDateFormat("hh:mm a", Locale.getDefault()).format(reminder.time)
     }
@@ -294,6 +318,8 @@ fun ReminderCard(
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(text = formattedTime, style = MaterialTheme.typography.bodyLarge)
             }
+            Checkbox(checked = reminder.isTaken, onCheckedChange = { isChecked ->
+                onIsTakenChange(reminder.copy(isTaken = isChecked)) })
             IconButton(onClick = onUpdate) {
                 Icon(imageVector = Icons.Default.Edit, contentDescription = null)
             }
@@ -314,6 +340,8 @@ fun Form(time : String, onTimeClick : () -> Unit, onClick : (String, String, Boo
     val dosage = remember { mutableStateOf("") }
     val isChecked = remember { mutableStateOf(false) }
 
+    val keyboardController = LocalSoftwareKeyboardController.current
+
     Column (
         modifier = Modifier
             .padding(12.dp)
@@ -325,7 +353,10 @@ fun Form(time : String, onTimeClick : () -> Unit, onClick : (String, String, Boo
             onValueChange = {name.value = it},
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
-            label = { Text(text = "Name") })
+            label = { Text(text = "Name") },
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(onDone = { keyboardController?.hide() })
+        )
 
         Spacer(modifier = Modifier.height(12.dp))
 
@@ -333,7 +364,10 @@ fun Form(time : String, onTimeClick : () -> Unit, onClick : (String, String, Boo
             value = dosage.value,
             onValueChange = {dosage.value = it},
             modifier = Modifier.fillMaxWidth(),
-            label = { Text(text = "Dosage") })
+            label = { Text(text = "Dosage") },
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(onDone = { keyboardController?.hide()}
+            ))
 
         Spacer(modifier = Modifier.height(12.dp))
 
@@ -341,10 +375,13 @@ fun Form(time : String, onTimeClick : () -> Unit, onClick : (String, String, Boo
             value = time,
             onValueChange = {onTimeClick.invoke()},
             modifier = Modifier
-                .clickable {onTimeClick.invoke()}
+                .clickable { onTimeClick.invoke() }
                 .fillMaxWidth(),
             enabled = false,
-            singleLine = true)
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(onDone = { keyboardController?.hide()})
+            )
 
         Spacer(modifier = Modifier.height(12.dp))
 
@@ -352,7 +389,7 @@ fun Form(time : String, onTimeClick : () -> Unit, onClick : (String, String, Boo
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically)
         {
-            Text(text = "Repeat reminder")
+            Text(text = "Set reminder")
             Spacer(modifier = Modifier.width(12.dp))
 
             Switch(checked = isChecked.value, onCheckedChange = { isChecked.value = it })
