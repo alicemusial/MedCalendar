@@ -57,6 +57,7 @@ class MainViewModel @Inject constructor(
         _updateReminder.value = UiState.Loading
         repository.update(reminder) {
             _updateReminder.value = it
+            getReminders()
         }
         }
 

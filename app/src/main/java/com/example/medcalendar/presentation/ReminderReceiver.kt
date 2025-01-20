@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
@@ -32,6 +33,8 @@ class ReminderReceiver : BroadcastReceiver(){
     override fun onReceive(context: Context, intent: Intent) {
         val reminderJson = intent.getStringExtra(REMINDER)
         val reminder = Gson().fromJson(reminderJson, Reminder::class.java)
+
+        Log.d("ReminderReceiver", "Received reminder: $reminder")
 
         val doneIntent = Intent(context, ReminderReceiver::class.java).apply{
             putExtra(REMINDER,reminderJson)
@@ -61,10 +64,12 @@ class ReminderReceiver : BroadcastReceiver(){
             DONE -> {
                 runBlocking { updateUseCase.invoke(reminder.copy(isTaken = true)) }
                 cancelAlarm(context, reminder)
+                Log.d("ReminderReceiver", "Reminder marked as taken: $reminder")
             }
             REJECT -> {
                 runBlocking { updateUseCase.invoke(reminder.copy(isTaken = false)) }
                 cancelAlarm(context, reminder)
+                Log.d("ReminderReceiver", "Received reminder: $reminder")
             }
             else -> {
                 if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU){
@@ -82,6 +87,7 @@ class ReminderReceiver : BroadcastReceiver(){
                         NotificationManagerCompat.from(context).notify(reminder.time.toInt(), notification)
                     }
                 } else {
+                    Log.d("ReminderReceiver", "Received reminder: $reminder")
                     val notification = NotificationCompat.Builder(context, CHANNEL)
                         .setSmallIcon(R.drawable.ic_launcher_background)
                         .setContentTitle("Medication Reminder")

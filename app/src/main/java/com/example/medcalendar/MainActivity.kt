@@ -21,6 +21,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddCircle
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Schedule
@@ -31,6 +32,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -102,6 +104,7 @@ fun MainScreen(viewModel: MainViewModel) {
     val format = remember { SimpleDateFormat("hh:mm a", Locale.getDefault()) }
     val timeInMillis = remember { mutableStateOf(0L) }
     val isUpdateDialogOpen = remember { mutableStateOf(false) }
+    val selectedReminder = remember { mutableStateOf<Reminder?>(null) }
 
     LaunchedEffect(Unit) {
         try {
@@ -142,6 +145,14 @@ fun MainScreen(viewModel: MainViewModel) {
                                 .padding(16.dp)
                                 .background(color = MaterialTheme.colorScheme.surface, shape = MaterialTheme.shapes.medium)
                         ) {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Row{
+                            Text(text = "Add Reminder",style = MaterialTheme.typography.titleLarge)
+                            Spacer(modifier = Modifier.weight(1f))
+                            IconButton( onClick = {isDialogOpen.value = false}) {
+                                Icon(imageVector = Icons.Default.Close, contentDescription = null)
+                            }}
+                            Spacer(modifier = Modifier.height(12.dp))
                             Form(time = format.format(timeInMillis.value),
                                 onTimeClick = { isTimePickerOpen.value = true }) { name, dosage, isRepeating ->
                                 val reminder = Reminder(
@@ -159,36 +170,56 @@ fun MainScreen(viewModel: MainViewModel) {
                                 }
                                 isDialogOpen.value = false
                             }
+                            Spacer(modifier = Modifier.height(12.dp))
                         }
                     }
                 }
 
                 // Update Dialog Open
                 if (isUpdateDialogOpen.value) {
-                    Dialog(onDismissRequest = { isDialogOpen.value = false }) {
+                    Dialog(onDismissRequest = {
+                        isDialogOpen.value = false
+                        selectedReminder.value = null
+                    }) {
                         Column(
                             modifier = Modifier
                                 .padding(16.dp)
                                 .background(color = MaterialTheme.colorScheme.surface, shape = MaterialTheme.shapes.medium)
-                        ) {
-                            Form(time = format.format(timeInMillis.value),
+                        ) { Spacer(modifier = Modifier.height(12.dp))
+                            Row{
+                                Text(text = "Update Reminder",style = MaterialTheme.typography.titleLarge)
+                                Spacer(modifier = Modifier.weight(1f))
+                                IconButton( onClick = {isUpdateDialogOpen.value = false}) {
+                                    Icon(imageVector = Icons.Default.Close, contentDescription = null)
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Form(time = format.format(selectedReminder.value?.time ?: 0L),
                                 onTimeClick = { isTimePickerOpen.value = true }) { name, dosage, isRepeating ->
-                                val reminder = Reminder(
+                                val updatedReminder = selectedReminder.value?.copy(
                                     name,
                                     dosage,
                                     timeInMillis.value,
                                     isTaken = false,
                                     isRepeating = isRepeating
                                 )
-                                viewModel.update(reminder)
+                                if (updatedReminder != null) {
+                                    viewModel.update(updatedReminder)
+                                }
                                 if (isRepeating) {
-                                    setUpPeriodicAlarm(context, reminder)
+                                    if (updatedReminder != null) {
+                                        setUpPeriodicAlarm(context, updatedReminder)
+                                    }
                                 } else {
-                                    setUpAlarm(context, reminder)
+                                    if (updatedReminder != null) {
+                                        setUpAlarm(context, updatedReminder)
+                                    }
                                 }
                                 isUpdateDialogOpen.value = false
+                                selectedReminder.value = null
                             }
-                        }
+                            Spacer(modifier = Modifier.height(12.dp))
+                        }}
                     }
                 }
 
@@ -231,13 +262,15 @@ fun MainScreen(viewModel: MainViewModel) {
                                 Text(text = "Add your medicine reminders!")
                             }
                         } else {
-                            LazyColumn(modifier = Modifier.fillMaxSize()) {
+                            LazyColumn(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
                                 items(state.data) { reminder ->
                                     ReminderCard(
                                         reminder,
                                         onDelete = { viewModel.delete(reminder) },
                                         onUpdate = {
                                             isUpdateDialogOpen.value = true
+                                            selectedReminder.value = reminder
+                                            timeInMillis.value = reminder.time
                                             }
 
                                     )
@@ -255,7 +288,7 @@ fun MainScreen(viewModel: MainViewModel) {
                         }
                     }
                 }
-            }
+
         }
     )
 }
@@ -267,6 +300,9 @@ fun ReminderCard(
     reminder: Reminder,
     onDelete: () -> Unit,
     onUpdate: () -> Unit) {
+    val formattedTime = remember {
+        SimpleDateFormat("hh:mm a", Locale.getDefault()).format(reminder.time)
+    }
     Card(modifier = Modifier.padding(8.dp), colors = CardDefaults.cardColors(
         containerColor = MaterialTheme.colorScheme.secondaryContainer,
     )){
@@ -275,11 +311,11 @@ fun ReminderCard(
             verticalAlignment = Alignment.CenterVertically
         ){
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = reminder.name)
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(text = reminder.dosage)
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(text = format(reminder.time.toString()))
+                Text(text = reminder.name, style = MaterialTheme.typography.headlineMedium)
+                Spacer(modifier = Modifier.height(10.dp))
+                Text(text = reminder.dosage, style = MaterialTheme.typography.bodyLarge)
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(text = formattedTime, style = MaterialTheme.typography.bodyLarge)
             }
             IconButton(onClick = onUpdate) {
                 Icon(imageVector = Icons.Default.Edit, contentDescription = null)
@@ -311,16 +347,18 @@ fun Form(time : String, onTimeClick : () -> Unit, onClick : (String, String, Boo
             value = name.value,
             onValueChange = {name.value = it},
             modifier = Modifier.fillMaxWidth(),
-            singleLine = true)
+            singleLine = true,
+            label = { Text(text = "Name") })
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         OutlinedTextField(
             value = dosage.value,
             onValueChange = {dosage.value = it},
-            modifier = Modifier.fillMaxWidth())
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text(text = "Dosage") })
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         OutlinedTextField(
             value = time,
@@ -331,13 +369,13 @@ fun Form(time : String, onTimeClick : () -> Unit, onClick : (String, String, Boo
             enabled = false,
             singleLine = true)
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         Row (
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically)
         {
-            Text(text = "Schedule")
+            Text(text = "Repeat reminder")
             Spacer(modifier = Modifier.width(12.dp))
 
             Switch(checked = isChecked.value, onCheckedChange = { isChecked.value = it })
@@ -350,6 +388,7 @@ fun Form(time : String, onTimeClick : () -> Unit, onClick : (String, String, Boo
             Text(text = "Save")
         }
 
-        Spacer(modifier = Modifier.height(32.dp))
+
+        Spacer(modifier = Modifier.height(4.dp))
     }
 }
